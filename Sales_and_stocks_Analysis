@@ -1,0 +1,80 @@
+def average_per_quarter(product_log: dict, product_name: str):
+    # Weighted average sales calculated from data for two periods of different length: latest 3 months and latest 12 months.
+    for key, value in product_log.items():
+        if key == product_name:
+            quarterly_sales = value['3-month sales']
+            annual_sales = value['12-month sales']
+            average_quarterly_sales = (quarterly_sales * 8 + annual_sales) / 12
+            # The average should give quarterly sales twice the weight of annual sales, so it is calculated like this:
+            # 2 years (8 quarters) at the quarterly sales rate + 1 year (4 quarters) at the annual sales rate, divided by 3 years (12 quarters).
+            return average_quarterly_sales
+
+
+def months_in_inventory(product_log: dict, product_name: str):
+    # How many months it will take us to sell the available stocks of this product.
+    for key, value in product_log.items():
+        if key == product_name:
+            current_stocks = value['stocks']
+            average_monthly_sales = average_per_quarter(product_log, product_name) / 3
+            average_months_in_inventory = current_stocks / average_monthly_sales
+            return average_months_in_inventory
+
+
+def optimal_stock_level(product_log: dict, product_name: str):
+    # Based on the average sales rate, we determine what quantity of the product should suffice for the next 6 months, i.e. 2 quarters.
+    # Ideally, we should have neither more nor less than that in our stocks.
+    for key in product_log.keys():
+        if key == product_name:
+            average_quarterly_sales = average_per_quarter(product_log, product_name)
+            optimal_stocks = average_quarterly_sales * 2
+            return optimal_stocks
+
+
+def action_needed(product_log: dict, product_name: str):
+    # Comparing the actual stocks with the optimal ones, we determine by how much we should increase or reduce the stocks.
+    for key, value in product_log.items():
+        if key == product_name:
+            optimum = optimal_stock_level(product_log, product_name)
+            actual_stocks = value['stocks']
+            difference = optimum - actual_stocks
+            return difference
+
+
+product_list = {}
+product_summary = {}
+
+input_line = input()
+while input_line != "end":
+    input_data = input_line.split("\t")
+    product = input_data[0]
+    if input_data[1] != "":
+        stocks = float(input_data[1])
+    else:
+        stocks = 0
+    if input_data[2] != "":
+        sales_3_months = float(input_data[2])
+    else:
+        sales_3_months = 0
+    if input_data[3] != "":
+        sales_12_months = float(input_data[3])
+    else:
+        sales_12_months = 0
+    product_data = {'stocks': stocks, '3-month sales': sales_3_months, '12-month sales': sales_12_months}
+    product_list[product] = product_data
+    input_line = input()
+
+for product in product_list.keys():
+    average_quarterly_sales = average_per_quarter(product_list, product)
+    inventory_months = months_in_inventory(product_list, product)
+    optimal_stocks = optimal_stock_level(product_list, product)
+    action = action_needed(product_list, product)
+    product_list[product].update({'average per quarter': average_quarterly_sales, 'months in inventory': inventory_months, 'optimal stock level': optimal_stocks, 'action needed': action})
+
+headers = ['product name', 'stocks', '3-month sales', '12-month sales', 'average per quarter', 'months in inventory', 'optimal stock level', 'action needed']
+
+print("\t".join(headers))
+for product, data in product_list.items():
+    row = [product]
+    for number in data.values():
+        row.append(str(int(number)))
+    print("\t".join(row))
